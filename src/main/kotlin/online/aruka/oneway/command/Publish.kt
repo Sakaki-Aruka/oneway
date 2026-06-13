@@ -28,7 +28,7 @@ class Publish : Callable<Int> {
     @CommandLine.Option(names = ["-V"], required = true)
     lateinit var version: String
 
-    @CommandLine.Option(names = ["--version_name"], required = false)
+    @CommandLine.Option(names = ["--version-name"], required = false)
     var versionName: String? = null
 
     @CommandLine.Option(names = ["--changelog"], required = false)
@@ -49,7 +49,7 @@ class Publish : Callable<Int> {
     )
     var dependencies: Array<String>? = null
 
-    @CommandLine.Option(names = ["-g", "--game_version"], split = ",", required = true)
+    @CommandLine.Option(names = ["-g", "--game-version"], split = ",", required = true)
     lateinit var gameVersions: Array<String>
 
     @CommandLine.Option(names = ["-t", "--release-type"], required = true, description = ["Release type: release, beta, alpha"])
@@ -77,87 +77,65 @@ class Publish : Callable<Int> {
     var isTest: Boolean = false
 
     private fun endpoint(): String {
-        return (if (this.isTest) DefaultSettings.ENDPOINT_BASE else DefaultSettings.TEST_ENDPOINT_BASE) + "version"
+        return (if (this.isTest) DefaultSettings.TEST_ENDPOINT_BASE else DefaultSettings.ENDPOINT_BASE) + "version"
     }
 
     override fun call(): Int {
-        val changelogContent: String? = changelogFile?.let { file ->
-            file.readLines().joinToString(System.lineSeparator())
-        }
+        val errors: MutableList<String> = mutableListOf()
+
+        val changelogContent: String? = changelogFile?.readLines()?.joinToString(System.lineSeparator())
 
         val (versions, invalidVersions) = MinecraftVersion.getFromVersionIshSet(*this.gameVersions)
         if (invalidVersions.isNotEmpty()) {
-            if (this.showError) {
-                System.err.println("Invalid game versions: ${invalidVersions.joinToString(", ")}")
-            }
-            return 3
+            errors.add("Invalid game versions: ${invalidVersions.joinToString(", ")}")
         }
-
         if (versions.isEmpty()) {
-            if (this.showError) {
-                System.err.println("Valid game versions not exist.")
-            }
-            return 3
+            errors.add("Valid game versions not exist.")
         }
 
         if (this.releaseType !in ReleaseVersionType.entries.map { it.type }) {
-            if (this.showError) {
-                System.err.println("Invalid release type: $releaseType")
-            }
-            return 3
+            errors.add("Invalid release type: $releaseType")
         }
 
         val invalidLoaders: List<String> = this.platforms
             .filter { platform -> Loader.entries.none { it.v == platform } }
         if (invalidLoaders.isNotEmpty()) {
-            if (this.showError) {
-                System.err.println("Invalid loaders: ${invalidLoaders.joinToString(", ")}")
-            }
-            return 3
+            errors.add("Invalid loaders: ${invalidLoaders.joinToString(", ")}")
         }
 
-        val dependencyWarnings: MutableList<Throwable> = mutableListOf()
+        val dependencyErrors: MutableList<String> = mutableListOf()
         val validDependencies: MutableList<CreateRequest.Dependency> = mutableListOf()
-        this.dependencies?.let { deps ->
-            deps.forEach { entry ->
-                CreateRequest.Dependency.fromDependencyIsh(entry)
-                    .onFailure { dependencyWarnings.add(it) }
-                    .onSuccess { validDependencies.add(it) }
-            }
+        this.dependencies?.forEach { entry ->
+            CreateRequest.Dependency.fromDependencyIsh(entry)
+                .onFailure { dependencyErrors.add(it.message ?: "") }
+                .onSuccess { validDependencies.add(it) }
         }
-        if (dependencyWarnings.isNotEmpty()) {
-            if (this.showError) {
-                val msg: String = dependencyWarnings.joinToString(System.lineSeparator()) { it.message ?: "" }
-                System.err.println("Invalid dependency. ${System.lineSeparator()}$msg")
-            }
-            return 3
+        if (dependencyErrors.isNotEmpty()) {
+            errors.add("Invalid dependency.${System.lineSeparator()}${dependencyErrors.joinToString(System.lineSeparator())}")
         }
 
         if (this.status !in setOf("listed", "draft", "unlisted", "archived")) {
-            if (this.showError) {
-                System.err.println("Invalid status. (Set listed, draft, unlisted or archived)")
-            }
-            return 3
+            errors.add("Invalid status. (Set listed, draft, unlisted or archived)")
         }
 
         if (this.files.isEmpty()) {
-            if (this.showError) {
-                System.err.println("Files and a primary file not specified.")
-            }
-            return 3
+            errors.add("Files not specified.")
         }
 
         val fileNameCounts: Map<String, Int> = this.files
             .groupingBy { it.name }
             .eachCount()
-
         if (fileNameCounts.any { (_, times) -> times > 1 }) {
+            val names: String = fileNameCounts
+                .filter { (_, times) -> times > 1 }
+                .map { (name, _) -> name }
+                .joinToString(", ")
+            errors.add("File name duplicated: $names")
+        }
+
+        if (errors.isNotEmpty()) {
             if (this.showError) {
-                val names: String = fileNameCounts
-                    .filter { (_, times) -> times > 1 }
-                    .map { (name, _) -> name }
-                    .joinToString(", ")
-                System.err.println("File name duplicated: $names")
+                System.err.println(errors.joinToString(System.lineSeparator()))
             }
             return 3
         }
@@ -198,7 +176,7 @@ class Publish : Callable<Int> {
         }
 
         val httpRequest = Request.Builder()
-            .url(endpoint() + "version")
+            .url(endpoint())
             .post(multipartBodyBuilder.build())
             .addHeader("Authorization", token)
             .addHeader("User-Agent", "${createRequest.projectId},${createRequest.versionNumber}")
@@ -209,6 +187,9 @@ class Publish : Callable<Int> {
             .onFailure {
                 if (this.showError) {
                     System.err.println("Failed to send request.")
+                    if (this.isTest) {
+                        it.message?.let { errorMessage -> System.err.println(errorMessage) }
+                    }
                 }
                 return 4
             }
@@ -223,6 +204,9 @@ class Publish : Callable<Int> {
                 return if (resp.isSuccessful) 0 else 4
             }
 
+        if (this.showError) {
+            System.err.println("How Did We Get Here?")
+        }
         return 4
     }
 }
