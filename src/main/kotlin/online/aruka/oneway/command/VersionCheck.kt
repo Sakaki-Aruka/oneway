@@ -56,7 +56,7 @@ class VersionCheck : Callable<Int> {
             if (this.showError) {
                 System.err.println("${this.version} has already released.")
             }
-            return 2
+            return 4
         }
 
         return 0

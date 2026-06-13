@@ -61,7 +61,7 @@ class Publish : Callable<Int> {
     @CommandLine.Option(names = ["--featured"], required = false)
     var featured: Boolean = false
 
-    @CommandLine.Option(names = ["-p", "--project_id"], required = true)
+    @CommandLine.Option(names = ["-p", "--project-id"], required = true)
     lateinit var projectId: String
 
     @CommandLine.Option(names = ["-s", "--status"], required = false, description = ["Status: listed, draft, unlisted,  archived"])
