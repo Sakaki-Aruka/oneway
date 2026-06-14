@@ -21,7 +21,7 @@ Base: `java -jar Oneway-<VERSION>.jar version`
 | 4 | Request failed |
 
 ## Required arguments
-- `--token <TOKEN>` : PAT (Personal Access Token)
+- `--token <TOKEN>` : PAT (Personal Access Token) 
 - `-f <FILE_PATH>` : Upload file path
 - `-V <VERSION>` : Release elements version. (e.g. `1.0.0`)
 - `-g <GAME_VERSIONS>` : Target Minecraft version. Split by commas.
@@ -34,6 +34,12 @@ Base: `java -jar Oneway-<VERSION>.jar version`
   - `alpha` : Alpha
 - `-l <PLATFORM_TYPES>` : Platform names.
 - `-p <PROJECT_ID>` : Project ID
+
+### Token scope
+
+Oneway only requires "Create Versions" scope to run.  
+
+![](images/token-scope.png)
 
 ### Platform types
 
