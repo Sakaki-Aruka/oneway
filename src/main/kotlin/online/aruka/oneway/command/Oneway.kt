@@ -4,7 +4,7 @@ import picocli.CommandLine
 
 @CommandLine.Command(
     name = "oneway",
-    subcommands = [VersionCheck::class],
+    subcommands = [VersionCheck::class, Publish::class],
     description = ["Check and upload"]
 )
 class Oneway {
