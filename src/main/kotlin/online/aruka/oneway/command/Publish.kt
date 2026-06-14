@@ -83,7 +83,20 @@ class Publish : Callable<Int> {
     override fun call(): Int {
         val errors: MutableList<String> = mutableListOf()
 
-        val changelogContent: String? = changelogFile?.readLines()?.joinToString(System.lineSeparator())
+        if (this.token.isBlank()) {
+            errors.add("Token is blank.")
+        }
+
+        val notFoundFiles: List<File> = this.files.filter { !it.exists() }
+        if (notFoundFiles.isNotEmpty()) {
+            errors.add("Files not found: ${notFoundFiles.joinToString(", ") { it.path }}")
+        }
+
+        if (this.changelogFile != null && !this.changelogFile!!.exists()) {
+            errors.add("Changelog file not found: ${this.changelogFile!!.path}")
+        }
+
+        val changelogContent: String? = changelogFile?.takeIf { it.exists() }?.readLines()?.joinToString(System.lineSeparator())
 
         val (versions, invalidVersions) = MinecraftVersion.getFromVersionIshSet(*this.gameVersions)
         if (invalidVersions.isNotEmpty()) {
