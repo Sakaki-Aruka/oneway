@@ -6,8 +6,17 @@ Tiny CLI tool for Modrinth.
 
 - Create version release
 - Check version conflict
+- Update project readme
 
 # Commands
+
+Base: `java -jar Oneway-<VERSION>.jar`
+
+Subcommand:
+- `version`
+- `not-exists`
+- `readme`
+
 ## Create
 
 Base: `java -jar Oneway-<VERSION>.jar version`  
@@ -123,3 +132,28 @@ Base: `java -jar Oneway-<VERSION>.jar not-exists <PROJECT_ID> <VERSION>`
 
 - `-e` : Displays errors
   - `--show-error` : Alias
+
+## Update readme
+
+Base: `java -jar Oneway-<VERSION>.jar readme <FILE_PATH>`
+
+`<FILE_PATH>` is the local file whose content replaces the project's readme (Modrinth's `body` field) on the project page.
+
+### Exit codes
+
+Same as [Create](#exit-codes).
+
+### Required arguments
+- `--token <TOKEN>` : PAT (Personal Access Token)
+- `-p <PROJECT_ID>` : Project ID
+
+### Option arguments
+
+- `-e` : Displays errors
+  - `--show-error` : Alias
+- `--show-response` : Displays http response
+- `--test` : Use test api endpoint
+
+### Token scope
+
+Oneway requires a scope that allows editing project details (the same permission group used to edit a project's description) to run this command.
